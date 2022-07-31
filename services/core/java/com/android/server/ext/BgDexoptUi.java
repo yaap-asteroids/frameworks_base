@@ -86,7 +86,8 @@ public class BgDexoptUi {
 
         var args = new Bundle();
         args.putStringArrayList(Intent.EXTRA_PACKAGES, new ArrayList<>(changedPackages));
-        b.setContentIntent(IntentReceiver.getPendingIntent(NotifActionReceiver.class, ctx, args));
+        b.setContentIntent(IntentReceiver.getPendingIntent(
+                NotifActionReceiver.class, NotifActionReceiver::new, args, ctx));
 
         showNotif(ctx, b);
     }
