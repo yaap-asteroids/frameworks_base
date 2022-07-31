@@ -96,6 +96,7 @@ import android.content.pm.DataLoaderType;
 import android.content.pm.FallbackCategoryProvider;
 import android.content.pm.FeatureInfo;
 import android.content.pm.Flags;
+import android.content.pm.GosPackageState;
 import android.content.pm.IDexModuleRegisterCallback;
 import android.content.pm.IOnChecksumsReadyListener;
 import android.content.pm.IPackageDataObserver;
@@ -346,6 +347,7 @@ import java.util.stream.Collectors;
  * </pre>
  */
 public class PackageManagerService implements PackageSender, TestUtilityService {
+    public final GosPackageStatePmHooks gosPackageStatePmHooks;
 
     static final String TAG = "PackageManager";
     public static final boolean DEBUG_SETTINGS = false;
@@ -1905,6 +1907,7 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
     @VisibleForTesting(visibility = VisibleForTesting.Visibility.PRIVATE)
     public PackageManagerService(@NonNull PackageManagerServiceInjector injector,
             @NonNull PackageManagerServiceTestParams testParams) {
+        gosPackageStatePmHooks = new GosPackageStatePmHooks(this);
         mInjector = injector;
         mInjector.bootstrap(this);
         mAppsFilter = injector.getAppsFilter();
@@ -2020,6 +2023,7 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
             final String partitionsFingerprint, final boolean isEngBuild,
             final boolean isUserDebugBuild, final int sdkVersion, final String incrementalVersion,
             final int sdkVersionFull) {
+        gosPackageStatePmHooks = new GosPackageStatePmHooks(this);
         mIsEngBuild = isEngBuild;
         mIsUserDebugBuild = isUserDebugBuild;
         mSdkVersion = sdkVersion;
@@ -4715,6 +4719,8 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
             dexUseManager.systemReady();
         }
 
+        gosPackageStatePmHooks.init();
+
         PackageMetrics.logInvalidationMetrics();
     }
 
@@ -5175,6 +5181,10 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
             mHandler.post(new Runnable() {
                 public void run() {
                     mHandler.removeCallbacks(this);
+
+                    GosPackageStatePmHooks.onClearApplicationUserData(
+                            PackageManagerService.this, packageName, userId);
+
                     final boolean succeeded;
                     try (PackageFreezer freezer = freezePackage(packageName, userId,
                             "clearApplicationUserData",
@@ -7154,6 +7164,22 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
                     getPerUidReadTimeouts(snapshot), mSnapshotStatistics
             ).doDump(snapshot, fd, pw, args);
         }
+
+        @Override
+        public GosPackageState getGosPackageState(@NonNull String packageName, int userId) {
+            int callingUid = Binder.getCallingUid();
+            int callingPid = Binder.getCallingPid();
+            return gosPackageStatePmHooks.getFiltered(callingUid, callingPid, packageName, userId);
+        }
+
+        @Override
+        public boolean setGosPackageState(@NonNull String packageName, int userId,
+                                                  @NonNull GosPackageState updatedPs, int editorFlags) {
+            int callingUid = Binder.getCallingUid();
+            int callingPid = Binder.getCallingPid();
+            return gosPackageStatePmHooks.set(callingUid, callingPid, packageName, userId,
+                    updatedPs, editorFlags);
+        }
     }
 
     @VisibleForTesting
@@ -7754,6 +7780,12 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
                 @Build.SdkIntFull int sdkVersionFull) {
             final boolean isUpgrading = mPriorSdkVersionFull != -1;
             return isUpgrading && (mPriorSdkVersionFull < sdkVersionFull);
+        }
+
+        @NonNull
+        @Override
+        public GosPackageState getGosPackageState(String packageName, int userId) {
+            return gosPackageStatePmHooks.getUnfiltered(packageName, userId);
         }
 
         @Override

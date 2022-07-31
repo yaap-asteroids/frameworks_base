@@ -19326,6 +19326,13 @@ public class ActivityManagerService extends IActivityManager.Stub
                 return hasServiceBindingOrProviderUseLocked(uid, clientUid);
             }
         }
+
+        @Override
+        public void dispatchGosPackageStateCallbacks(int uid) {
+            synchronized (mGlobalLock) {
+                mProcessList.dispatchGosPackageStateChangedLOSP(uid);
+            }
+        }
     }
 
     long inputDispatchingTimedOut(int pid, final boolean aboveSystem, TimeoutRecord timeoutRecord) {
