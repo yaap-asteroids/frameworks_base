@@ -318,6 +318,10 @@ message SystemMessage {
     // Package: android
     NOTE_WRONG_HSUM_STATUS = 77;
 
+    // See com.android.server.ext.MissingSpecialRuntimePermissionNotification
+    // Package: android
+    NOTE_MISSING_PERMISSION_OTHER_SENSORS = 500;
+
     NOTE_BACKGROUND_DEXOPT = 501;
 
     // ADD_NEW_IDS_ABOVE_THIS_LINE
