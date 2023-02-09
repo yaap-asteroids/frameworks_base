@@ -19,5 +19,13 @@
     <staging-public-group type="string" first-id="0x0198f000">
         <!-- @hide -->
         <public name="config_first_party_app_source_package_name"/>
+        <!-- @hide -->
+        <public name="permgrouplab_otherSensors"/>
+        <!-- @hide -->
+        <public name="permgroupdesc_otherSensors"/>
+        <!-- @hide -->
+        <public name="permlab_otherSensors"/>
+        <!-- @hide -->
+        <public name="permdesc_otherSensors"/>
     </staging-public-group>
 </resources>
