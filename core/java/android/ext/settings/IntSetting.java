@@ -5,39 +5,43 @@
 
 package android.ext.settings;
 
+import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.annotation.SystemApi;
 import android.content.Context;
 
-import java.util.function.IntSupplier;
+import java.util.function.ToIntFunction;
 
 /** @hide */
+@SystemApi
 public class IntSetting extends Setting<IntSetting> {
     private int defaultValue;
-    private volatile IntSupplier defaultValueSupplier;
+    private volatile ToIntFunction<Context> defaultValueSupplier;
 
     @Nullable private final int[] validValues;
 
-    private IntSetting(Scope scope, String key, @Nullable int[] validValues) {
+    private IntSetting(@NonNull Scope scope, @NonNull String key, @Nullable int[] validValues) {
         super(scope, key);
         this.validValues = validValues;
     }
 
-    public IntSetting(Scope scope, String key, int defaultValue) {
+    public IntSetting(@NonNull Scope scope, @NonNull String key, int defaultValue) {
         this(scope, key, (int[]) null);
         setDefaultValue(defaultValue);
     }
 
-    public IntSetting(Scope scope, String key, int defaultValue, int... validValues) {
+    public IntSetting(@NonNull Scope scope, @NonNull String key, int defaultValue, @NonNull int... validValues) {
         this(scope, key, validValues);
         setDefaultValue(defaultValue);
     }
 
-    public IntSetting(Scope scope, String key, IntSupplier defaultValue) {
+    public IntSetting(@NonNull Scope scope, @NonNull String key, @NonNull ToIntFunction<Context> defaultValue) {
         this(scope, key, (int[]) null);
         defaultValueSupplier = defaultValue;
     }
 
-    public IntSetting(Scope scope, String key, IntSupplier defaultValue, int... validValues) {
+    public IntSetting(@NonNull Scope scope, @NonNull String key, @NonNull ToIntFunction<Context> defaultValue,
+                      @NonNull int... validValues) {
         this(scope, key, validValues);
         defaultValueSupplier = defaultValue;
     }
@@ -55,16 +59,16 @@ public class IntSetting extends Setting<IntSetting> {
         return false;
     }
 
-    public final int get(Context ctx) {
+    public final int get(@NonNull Context ctx) {
         return get(ctx, ctx.getUserId());
     }
 
     // use only if this is a per-user setting and the context is not a per-user one
-    public final int get(Context ctx, int userId) {
+    public final int get(@NonNull Context ctx, int userId) {
         String valueStr = getRaw(ctx, userId);
 
         if (valueStr == null) {
-            return getDefaultValue();
+            return getDefaultValue(ctx);
         }
 
         int value;
@@ -72,17 +76,17 @@ public class IntSetting extends Setting<IntSetting> {
             value = Integer.parseInt(valueStr);
         } catch (NumberFormatException e) {
             e.printStackTrace();
-            return getDefaultValue();
+            return getDefaultValue(ctx);
         }
 
         if (!validateValue(value)) {
-            return getDefaultValue();
+            return getDefaultValue(ctx);
         }
 
         return value;
     }
 
-    public final boolean put(Context ctx, int val) {
+    public final boolean put(@NonNull Context ctx, int val) {
         if (!validateValue(val)) {
             throw new IllegalArgumentException(Integer.toString(val));
         }
@@ -96,10 +100,10 @@ public class IntSetting extends Setting<IntSetting> {
         defaultValue = val;
     }
 
-    private int getDefaultValue() {
-        IntSupplier supplier = defaultValueSupplier;
+    private int getDefaultValue(Context ctx) {
+        ToIntFunction<Context> supplier = defaultValueSupplier;
         if (supplier != null) {
-            setDefaultValue(supplier.getAsInt());
+            setDefaultValue(supplier.applyAsInt(ctx));
             defaultValueSupplier = null;
         }
         return defaultValue;

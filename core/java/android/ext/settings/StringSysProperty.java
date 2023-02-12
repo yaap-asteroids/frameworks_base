@@ -1,25 +1,32 @@
 package android.ext.settings;
 
+import android.annotation.NonNull;
+import android.annotation.SystemApi;
+import android.content.Context;
 import android.os.UserHandle;
 
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /** @hide */
+@SystemApi
 public class StringSysProperty extends StringSetting {
 
-    public StringSysProperty(String key, String defaultValue) {
+    public StringSysProperty(@NonNull String key, @NonNull String defaultValue) {
         super(Scope.SYSTEM_PROPERTY, key, defaultValue);
     }
 
-    public StringSysProperty(String key, Supplier<String> defaultValue) {
+    public StringSysProperty(@NonNull String key, @NonNull Function<Context, String> defaultValue) {
         super(Scope.SYSTEM_PROPERTY, key, defaultValue);
     }
 
+    @NonNull
     public String get() {
+        //noinspection DataFlowIssue
         return super.get(null, UserHandle.USER_SYSTEM);
     }
 
-    public boolean put(String val) {
+    public boolean put(@NonNull String val) {
+        //noinspection DataFlowIssue
         return super.put(null, val);
     }
 }

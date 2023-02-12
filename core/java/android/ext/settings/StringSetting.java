@@ -5,60 +5,66 @@
 
 package android.ext.settings;
 
+import android.annotation.NonNull;
+import android.annotation.SystemApi;
 import android.content.Context;
 
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /** @hide */
+@SystemApi
 public class StringSetting extends Setting<StringSetting> {
     private String defaultValue;
-    private volatile Supplier<String> defaultValueSupplier;
+    private volatile Function<Context, String> defaultValueSupplier;
 
-    public StringSetting(Scope scope, String key, String defaultValue) {
+    public StringSetting(@NonNull Scope scope, @NonNull String key, @NonNull String defaultValue) {
         super(scope, key);
         setDefaultValue(defaultValue);
     }
 
-    public StringSetting(Scope scope, String key, Supplier<String> defaultValue) {
+    public StringSetting(@NonNull Scope scope, @NonNull String key, @NonNull Function<Context, String> defaultValue) {
         super(scope, key);
         this.defaultValueSupplier = defaultValue;
     }
 
-    public boolean validateValue(String val) {
+    public boolean validateValue(@NonNull String val) {
         return true;
     }
 
-    public final String get(Context ctx) {
+    @NonNull
+    public final String get(@NonNull Context ctx) {
         return get(ctx, ctx.getUserId());
     }
 
-    // use only if this is a per-user setting and the context is not a per-user one
-    public final String get(Context ctx, int userId) {
+    @NonNull
+    // use only if this is a per-user setting and the context does not specify the userId
+    public final String get(@NonNull Context ctx, int userId) {
         String s = getRaw(ctx, userId);
         if (s == null || !validateValue(s)) {
-            return getDefaultValue();
+            return getDefaultValue(ctx);
         }
         return s;
     }
 
-    public final boolean put(Context ctx, String val) {
+    public final boolean put(@NonNull Context ctx, @NonNull String val) {
         if (!validateValue(val)) {
             throw new IllegalStateException("invalid value " + val);
         }
         return putRaw(ctx, val);
     }
 
-    private void setDefaultValue(String val) {
+    private void setDefaultValue(@NonNull String val) {
         if (!validateValue(val)) {
             throw new IllegalStateException("invalid default value " + val);
         }
         defaultValue = val;
     }
 
-    private String getDefaultValue() {
-        Supplier<String> supplier = defaultValueSupplier;
+    @NonNull
+    private String getDefaultValue(Context ctx) {
+        Function<Context, String> supplier = defaultValueSupplier;
         if (supplier != null) {
-            setDefaultValue(supplier.get());
+            setDefaultValue(supplier.apply(ctx));
             defaultValueSupplier = null;
         }
         return defaultValue;

@@ -5,19 +5,25 @@
 
 package android.ext.settings;
 
+import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.annotation.SuppressLint;
+import android.annotation.SystemApi;
 import android.content.Context;
 import android.database.ContentObserver;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.SystemProperties;
 import android.provider.Settings;
+import android.util.Log;
 
 import java.util.function.Consumer;
 
 /** @hide */
+@SystemApi
 public abstract class Setting<SelfType extends Setting> {
 
+    @SuppressLint("Enum")
     public enum Scope {
         SYSTEM_PROPERTY, // android.os.SystemProperties, doesn't support state observers
         GLOBAL, // android.provider.Settings.Global
@@ -27,19 +33,23 @@ public abstract class Setting<SelfType extends Setting> {
     private final Scope scope;
     private final String key;
 
+    /** @hide */
     protected Setting(Scope scope, String key) {
         this.scope = scope;
         this.key = key;
     }
 
+    @NonNull
     public final String getKey() {
         return key;
     }
 
+    @NonNull
     public final Scope getScope() {
         return scope;
     }
 
+    /** @hide */
     @Nullable
     protected final String getRaw(Context ctx, int userId) {
         try {
@@ -57,7 +67,7 @@ public abstract class Setting<SelfType extends Setting> {
                     return Settings.Secure.getStringForUser(ctx.getContentResolver(), key, userId);
             }
         } catch (Throwable e) {
-            e.printStackTrace();
+            Log.e("ExtSettings", "key: " + key, e);
             if (Settings.isInSystemServer()) {
                 // should never happen under normal circumstances, but if it does,
                 // don't crash the system_server
@@ -71,6 +81,7 @@ public abstract class Setting<SelfType extends Setting> {
         throw new IllegalStateException();
     }
 
+    /** @hide */
     protected final boolean putRaw(Context ctx, String val) {
         switch (scope) {
             case SYSTEM_PROPERTY: {
@@ -100,11 +111,13 @@ public abstract class Setting<SelfType extends Setting> {
     }
 
     // pass the return value to unregisterObserver() to remove the observer
-    public final Object registerObserver(Context ctx, Consumer<SelfType> callback, Handler handler) {
-        return registerObserver(ctx, ctx.getUserId(), callback, handler);
+    @NonNull
+    public final Object registerObserver(@NonNull Context ctx, @NonNull Handler handler, @NonNull Consumer<SelfType> callback) {
+        return registerObserver(ctx, ctx.getUserId(), handler, callback);
     }
 
-    public final Object registerObserver(Context ctx, int userId, Consumer<SelfType> callback, Handler handler) {
+    @NonNull
+    public final Object registerObserver(@NonNull Context ctx, int userId, @NonNull Handler handler, @NonNull Consumer<SelfType> callback) {
         if (scope == Scope.SYSTEM_PROPERTY) {
             // SystemProperties.addChangeCallback() doesn't work unless the change is actually
             // reported elsewhere in the same process with SystemProperties.callChangeCallbacks()
@@ -153,7 +166,7 @@ public abstract class Setting<SelfType extends Setting> {
         return observer;
     }
 
-    public final void unregisterObserver(Context ctx, Object observer) {
+    public final void unregisterObserver(@NonNull Context ctx, @NonNull Object observer) {
         if (scope == Scope.SYSTEM_PROPERTY) {
             if (false) { // see comment in registerObserverInner
                 SystemProperties.removeChangeCallback((Runnable) observer);
