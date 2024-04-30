@@ -8235,7 +8235,7 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
             if (Process.isPrivateComputeCoreUid(visibleUid)) {
                 visibleUid = UserHandle.getUid(userId, visiblePackage.getUid());
             }
-            accessGranted = mAppsFilter.grantImplicitAccess(recipientUid, visibleUid,
+            accessGranted = mAppsFilter.grantImplicitAccess2(recipientUid, visibleUid,
                     retainOnUpdate);
         }
 
