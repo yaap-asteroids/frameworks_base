@@ -50,6 +50,7 @@ import kotlin.math.min
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DisposableHandle
+import kotlinx.coroutines.flow.combine
 
 object DeviceEntryIconViewBinder {
     private const val TAG = "DeviceEntryIconViewBinder"
@@ -280,6 +281,7 @@ object DeviceEntryIconViewBinder {
                     if (enableLockscreenBlur()) {
                         bgView.background =
                             bgView.viewRootImpl.createBackgroundBlurDrawable().apply {
+                                setXfermode(null)
                                 setBlurRadius(
                                     bgView.context.resources.getDimensionPixelOffset(
                                         R.dimen.fingerprint_icon_blur_radius
@@ -301,12 +303,15 @@ object DeviceEntryIconViewBinder {
                     }
 
                     launch("$TAG#bgViewModel.alpha") {
-                        bgViewModel.alpha.collect { alpha ->
-                            bgView.alpha = alpha
-                            if (enableLockscreenBlur()) {
-                                bgView.background?.alpha = (255 * alpha).toInt()
+                        combine(bgViewModel.alpha, view.blurAlphaMultiplier) { alpha, multiplier ->
+                                alpha to multiplier
                             }
-                        }
+                            .collect { (alpha, multiplier) ->
+                                bgView.alpha = alpha
+                                if (enableLockscreenBlur()) {
+                                    bgView.background?.alpha = (255 * alpha * multiplier).toInt()
+                                }
+                            }
                     }
                     launch("$TAG#bgViewModel.color") {
                         bgViewModel.color.collect { color ->

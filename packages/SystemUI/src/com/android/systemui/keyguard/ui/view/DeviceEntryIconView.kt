@@ -35,6 +35,7 @@ import com.airbnb.lottie.LottieDrawable
 import com.android.systemui.common.ui.view.TouchHandlingView
 import com.android.systemui.log.TouchHandlingViewLogger
 import com.android.systemui.res.R
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class DeviceEntryIconView
 @JvmOverloads
@@ -59,6 +60,7 @@ constructor(
         )
     val iconView: ImageView = ImageView(context, attrs).apply { id = R.id.device_entry_icon_fg }
     val bgView: ImageView = ImageView(context, attrs).apply { id = R.id.device_entry_icon_bg }
+    val blurAlphaMultiplier = MutableStateFlow(1f)
     val aodFpDrawable: LottieDrawable = LottieDrawable()
     var accessibilityHintType: AccessibilityHintType = AccessibilityHintType.NONE
 

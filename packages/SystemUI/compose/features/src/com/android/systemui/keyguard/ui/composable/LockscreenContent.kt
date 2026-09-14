@@ -22,6 +22,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.focusable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,6 +32,7 @@ import androidx.compose.runtime.referentialEqualityPolicy
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
@@ -52,10 +54,13 @@ import com.android.systemui.keyguard.ui.viewmodel.ViewStateAccessor
 import com.android.systemui.lifecycle.rememberViewModel
 import com.android.systemui.plugins.keyguard.ui.composable.elements.LockscreenElementContext
 import com.android.systemui.plugins.keyguard.ui.composable.elements.LockscreenElementKeys
+import com.android.systemui.scene.shared.model.Scenes
 import kotlin.math.min
 import kotlinx.coroutines.flow.first
 import platform.test.motion.compose.values.MotionTestValueKey
 import platform.test.motion.compose.values.motionTestValues
+
+val LocalLockscreenBlurAlpha = staticCompositionLocalOf<() -> Float> { { 1f } }
 
 /**
  * Renders the content of the lockscreen.
@@ -153,20 +158,35 @@ class LockscreenContent(
             lockscreenBehindScrimViewModel,
             Modifier.element(LockscreenElementKeys.BehindScrim),
         )
-        with(lockscreenElements) {
-            LockscreenElement(
-                LockscreenElementKeys.Root,
-                modifier
-                    .sysuiResTag("keyguard_root_view")
-                    .graphicsLayer { alpha = min(viewModel.alpha, contentAlphaAnimatable.value) }
-                    .motionTestValues {
-                        LockscreenElementKeys.Root.currentAlpha()?.let { alpha ->
-                            alpha exportAs LockscreenContentMotionTestKeys.Alpha
+        CompositionLocalProvider(
+            LocalLockscreenBlurAlpha provides {
+                if (
+                    layoutState.isTransitioningFromOrTo(Scenes.Lockscreen) ||
+                        layoutState.currentOverlays.isNotEmpty()
+                ) {
+                    0f
+                } else {
+                    min(viewModel.alpha, contentAlphaAnimatable.value)
+                }
+            }
+        ) {
+            with(lockscreenElements) {
+                LockscreenElement(
+                    LockscreenElementKeys.Root,
+                    modifier
+                        .sysuiResTag("keyguard_root_view")
+                        .graphicsLayer {
+                            alpha = min(viewModel.alpha, contentAlphaAnimatable.value)
                         }
-                    }
-                    .focusable(),
-                LockscreenElementContext(nonAuthUI = Modifier.nonAuthUI(viewModel)),
-            )
+                        .motionTestValues {
+                            LockscreenElementKeys.Root.currentAlpha()?.let { alpha ->
+                                alpha exportAs LockscreenContentMotionTestKeys.Alpha
+                            }
+                        }
+                        .focusable(),
+                    LockscreenElementContext(nonAuthUI = Modifier.nonAuthUI(viewModel)),
+                )
+            }
         }
         LockscreenFrontScrim(lockscreenFrontScrimViewModel)
     }

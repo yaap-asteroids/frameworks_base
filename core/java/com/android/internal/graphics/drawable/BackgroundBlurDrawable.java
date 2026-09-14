@@ -132,6 +132,8 @@ public final class BackgroundBlurDrawable extends Drawable {
         boolean changed = super.setVisible(visible, restart);
         if (changed) {
             mVisible = visible;
+            updatePath();
+            invalidateSelf();
             mAggregator.onBlurDrawableUpdated(this);
         }
         return changed;
@@ -141,6 +143,7 @@ public final class BackgroundBlurDrawable extends Drawable {
     public void setAlpha(int alpha) {
         if (mAlpha != alpha) {
             mAlpha = alpha;
+            updatePath();
             invalidateSelf();
             mAggregator.onBlurDrawableUpdated(this);
         }

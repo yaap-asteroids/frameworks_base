@@ -292,7 +292,10 @@ constructor(
         if (enableLockscreenBlur()) {
             val viewRootImpl = LocalView.current.viewRootImpl
             val drawable = remember {
-                viewRootImpl.createBackgroundBlurDrawable().apply { setBlurRadius(0) }
+                viewRootImpl.createBackgroundBlurDrawable().apply {
+                    setXfermode(null)
+                    setBlurRadius(0)
+                }
             }
             val cornerRadius = dimensionResource(R.dimen.keyguard_affordance_fixed_height)
             val blurRadius = dimensionResource(R.dimen.keyguard_shortcuts_blur_radius)

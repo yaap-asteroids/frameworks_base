@@ -44,6 +44,7 @@ import com.android.systemui.dagger.qualifiers.Main
 import com.android.systemui.flags.FeatureFlagsClassic
 import com.android.systemui.flags.Flags
 import com.android.systemui.keyguard.ui.binder.DeviceEntryIconViewBinder
+import com.android.systemui.keyguard.ui.composable.LocalLockscreenBlurAlpha
 import com.android.systemui.keyguard.ui.view.DeviceEntryIconView
 import com.android.systemui.keyguard.ui.viewmodel.DeviceEntryBackgroundViewModel
 import com.android.systemui.keyguard.ui.viewmodel.DeviceEntryForegroundViewModel
@@ -104,6 +105,7 @@ constructor(
     fun LockIcon(modifier: Modifier = Modifier, overrideColor: Color? = null) {
         val lockIconBounds = rememberLockIconBounds()
         val (disposable, setDisposable) = remember { mutableStateOf<DisposableHandle?>(null) }
+        val blurAlpha = LocalLockscreenBlurAlpha.current
 
         AndroidView(
             factory = { context ->
@@ -154,6 +156,7 @@ constructor(
                     }
                 },
             onRelease = { disposable?.dispose() },
+            update = { it.blurAlphaMultiplier.value = blurAlpha() },
         )
     }
 
