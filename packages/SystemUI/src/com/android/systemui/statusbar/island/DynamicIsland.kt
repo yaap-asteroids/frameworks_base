@@ -82,6 +82,7 @@ import com.android.compose.ui.graphics.painter.rememberDrawablePainter
 import com.android.systemui.common.shared.model.Icon
 import com.android.systemui.common.ui.compose.Icon
 import com.android.systemui.oneui.OneUiToggles
+import com.android.systemui.oneui.rememberSecureInt
 import com.android.systemui.oneui.rememberSecureToggle
 import com.android.systemui.res.R
 import com.android.systemui.statusbar.chips.ui.compose.OngoingActivityChip
@@ -127,6 +128,24 @@ fun DynamicIsland(
         aligned = true
     }
 
+    // Where the island sits once settled, so it can grow out of and shrink back into the cutout
+    // instead of its own geometric centre, which drifts with whatever else is sharing the pill.
+    var rowLeftX by remember { mutableFloatStateOf(0f) }
+    var rowWidth by remember { mutableFloatStateOf(0f) }
+
+    val density = LocalDensity.current
+    val nudgeXDp by rememberSecureInt(ISLAND_OFFSET_X_DP, default = 0)
+    val nudgeYDp by rememberSecureInt(ISLAND_OFFSET_Y_DP, default = 0)
+    val nudgeXPx = with(density) { nudgeXDp.dp.toPx() }
+    val nudgeYPx = with(density) { nudgeYDp.dp.toPx() }
+
+    val cutoutPivot =
+        if (aligned && rowWidth > 0f) {
+            TransformOrigin(((cutout.centerX - rowLeftX) / rowWidth).coerceIn(0f, 1f), 0.5f)
+        } else {
+            TransformOrigin.Center
+        }
+
     val pop by dependencies.islandNotifications.pop.collectAsState()
     var shownPop by remember { mutableStateOf(pop) }
     if (pop != null) shownPop = pop
@@ -142,10 +161,10 @@ fun DynamicIsland(
             visible = state != null || pop != null,
             enter =
                 fadeIn(IslandMotion.smooth()) +
-                    scaleIn(IslandMotion.snappy(), initialScale = AppearScale),
+                    scaleIn(IslandMotion.snappy(), AppearScale, cutoutPivot),
             exit =
                 fadeOut(IslandMotion.smooth()) +
-                    scaleOut(IslandMotion.snappy(), targetScale = AppearScale),
+                    scaleOut(IslandMotion.snappy(), AppearScale, cutoutPivot),
         ) {
             val targetIsland = shown
             val targetPop = shownPop.takeIf { pop != null || state == null }
@@ -164,8 +183,14 @@ fun DynamicIsland(
                         )
                 },
                 modifier =
-                    Modifier.offset { IntOffset(offsetX.roundToInt(), 0) }
-                        .graphicsLayer { alpha = if (aligned) 1f else 0f },
+                    Modifier.offset {
+                            IntOffset((offsetX + nudgeXPx).roundToInt(), nudgeYPx.roundToInt())
+                        }
+                        .graphicsLayer { alpha = if (aligned) 1f else 0f }
+                        .onGloballyPositioned {
+                            rowLeftX = it.positionInWindow().x
+                            rowWidth = it.size.width.toFloat()
+                        },
                 label = "island",
             ) { (notification, current) ->
                 Row(verticalAlignment = Alignment.CenterVertically) {

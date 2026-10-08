@@ -52,3 +52,22 @@ fun rememberSecureToggle(name: String): State<Boolean> {
     }
     return state
 }
+
+/** Follows the Settings.Secure int [name], [default] unless set. */
+@Composable
+fun rememberSecureInt(name: String, default: Int): State<Int> {
+    val resolver = LocalContext.current.contentResolver
+    fun read() = Settings.Secure.getInt(resolver, name, default)
+    val state = remember(resolver, name, default) { mutableStateOf(read()) }
+    DisposableEffect(resolver, name, default) {
+        val observer =
+            object : ContentObserver(Handler(Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean) {
+                    state.value = read()
+                }
+            }
+        resolver.registerContentObserver(Settings.Secure.getUriFor(name), false, observer)
+        onDispose { resolver.unregisterContentObserver(observer) }
+    }
+    return state
+}

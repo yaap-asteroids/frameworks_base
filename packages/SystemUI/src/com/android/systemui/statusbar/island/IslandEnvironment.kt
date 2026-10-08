@@ -16,6 +16,16 @@ import com.android.systemui.oneui.rememberSecureToggle
 /** Settings.Secure toggle for the dynamic island, on unless set to 0. */
 const val DYNAMIC_ISLAND_SETTING = "systemui_dynamic_island"
 
+/**
+ * Settings.Secure keys to manually nudge the island's position, in dp, both 0 unless set.
+ *
+ * The island aligns itself to the camera cutout it reads from the status bar's own layout; these
+ * exist only as an escape hatch for a device whose cutout geometry doesn't read back correctly,
+ * not something most devices need to touch.
+ */
+const val ISLAND_OFFSET_X_DP = "systemui_island_offset_x_dp"
+const val ISLAND_OFFSET_Y_DP = "systemui_island_offset_y_dp"
+
 /** Where the camera cutout sits in the status bar window. */
 data class IslandCutout(val centerX: Float, val width: Float) {
     companion object {
