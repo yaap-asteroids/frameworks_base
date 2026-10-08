@@ -89,6 +89,7 @@ import com.android.systemui.lifecycle.repeatWhenAttached
 import com.android.systemui.lifecycle.viewModel
 import com.android.systemui.plugins.DarkIconDispatcher
 import com.android.systemui.res.R
+import com.android.systemui.scene.shared.flag.SceneContainerFlag
 import com.android.systemui.scene.ui.view.WindowRootView
 import com.android.systemui.shade.ui.composable.VariableDayDate
 import com.android.systemui.statusbar.StatusBarAlwaysUseRegionSampling
@@ -119,6 +120,8 @@ import com.android.systemui.statusbar.pipeline.shared.ui.view.SystemStatusIconsL
 import com.android.systemui.statusbar.pipeline.shared.ui.viewmodel.HomeStatusBarViewModel
 import com.android.systemui.statusbar.pipeline.shared.ui.viewmodel.HomeStatusBarViewModel.HomeStatusBarViewModelFactory
 import com.android.systemui.statusbar.policy.Clock
+import com.android.systemui.statusbar.quickactions.popups.StatusBarPopupChips
+import com.android.systemui.statusbar.quickactions.ui.compose.QuickActionChipsContainer
 import com.android.systemui.statusbar.systemstatusicons.SystemStatusIconsInCompose
 import com.android.systemui.statusbar.systemstatusicons.domain.interactor.SystemStatusIconBlocklistInteractor
 import com.android.systemui.statusbar.systemstatusicons.ui.compose.SystemStatusIcons
@@ -510,16 +513,34 @@ private fun addStartSideComposable(
                     }
 
                 val chipsVisibilityModel = statusBarViewModel.ongoingActivityChips
-                if (chipsVisibilityModel.areChipsAllowed) {
-                    OngoingActivityChips(
-                        chips = chipsVisibilityModel.chips,
-                        iconViewStore = iconViewStore,
-                        onChipBoundsChanged = statusBarViewModel::onChipBoundsChanged,
-                        // TODO(b/393581408): Now that we always enforce a max width on the chips,
-                        //  we should be able to convert the chips to a LazyRow and get some
-                        //  animations for free.
-                        modifier = Modifier.sysUiResTagContainer().widthIn(max = chipsMaxWidth),
-                    )
+                // Popup chips share the ongoing chips' width limit so neither reaches the clock.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.widthIn(max = chipsMaxWidth),
+                ) {
+                    if (chipsVisibilityModel.areChipsAllowed) {
+                        OngoingActivityChips(
+                            chips = chipsVisibilityModel.chips,
+                            iconViewStore = iconViewStore,
+                            onChipBoundsChanged = statusBarViewModel::onChipBoundsChanged,
+                            // TODO(b/393581408): Now that we always enforce a max width on the
+                            //  chips, we should be able to convert the chips to a LazyRow and get
+                            //  some animations for free.
+                            modifier =
+                                Modifier.sysUiResTagContainer().widthIn(max = chipsMaxWidth),
+                        )
+                    }
+
+                    // AOSP only draws the popup chips (e.g. media controls that expand from
+                    // the status bar) on the desktop status bar; show them on phones too. Their
+                    // popups are scene container overlays, so without it they would do nothing
+                    // on tap.
+                    if (StatusBarPopupChips.isEnabled && SceneContainerFlag.isEnabled) {
+                        QuickActionChipsContainer(
+                            chips = statusBarViewModel.popupChips,
+                            isDarkProvider = statusBarViewModel.areaDark::isDarkTheme,
+                        )
+                    }
                 }
             }
         }
