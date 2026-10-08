@@ -153,7 +153,6 @@ public class NotificationShadeWindowViewController implements Dumpable {
     private final NotificationShadeWindowController mNotificationShadeWindowController;
     private DragDownHelper mDragDownHelper;
     private boolean mExpandingBelowNotch;
-    private final NotificationPanelViewController mNotificationPanelViewController;
     private final DockManager mDockManager;
     private final ShadeViewController mShadeViewController;
     private final PanelExpansionInteractor mPanelExpansionInteractor;
@@ -196,7 +195,6 @@ public class NotificationShadeWindowViewController implements Dumpable {
             DockManager dockManager,
             NotificationShadeDepthController depthController,
             NotificationShadeWindowView notificationShadeWindowView,
-            NotificationPanelViewController notificationPanelViewController,
             ShadeViewController shadeViewController,
             ShadeAnimationInteractor shadeAnimationInteractor,
             PanelExpansionInteractor panelExpansionInteractor,
@@ -237,7 +235,6 @@ public class NotificationShadeWindowViewController implements Dumpable {
         mStatusBarStateController = statusBarStateController;
         mView = notificationShadeWindowView;
         mDockManager = dockManager;
-        mNotificationPanelViewController = notificationPanelViewController;
         mShadeViewController = shadeViewController;
         mPanelExpansionInteractor = panelExpansionInteractor;
         mShadeExpansionStateManager = shadeExpansionStateManager;
@@ -774,9 +771,12 @@ public class NotificationShadeWindowViewController implements Dumpable {
     public void setDoubleTapToSleepGesture() {
         boolean isDoubleTapLockscreenEnabled = mSystemSettings.getInt(Settings.System.DOUBLE_TAP_SLEEP_LOCKSCREEN, 0) == 1;
         boolean isDoubleTapSbEnabled = mSystemSettings.getInt(Settings.System.DOUBLE_TAP_SLEEP_GESTURE, 0) == 1;
-        if (mNotificationPanelViewController != null) {
-            mNotificationPanelViewController.setLockscreenDoubleTapToSleep(isDoubleTapLockscreenEnabled);
-            mNotificationPanelViewController.setSbDoubleTapToSleep(isDoubleTapSbEnabled);
+        // Only the legacy shade implements these. Under the scene container the shade view
+        // controller is an empty implementation, and NotificationPanelViewController must not be
+        // created at all: its constructor asserts legacy mode.
+        if (mShadeViewController instanceof NotificationPanelViewController npvc) {
+            npvc.setLockscreenDoubleTapToSleep(isDoubleTapLockscreenEnabled);
+            npvc.setSbDoubleTapToSleep(isDoubleTapSbEnabled);
         }
         if (mDragDownHelper != null) {
             mDragDownHelper.updateDoubleTapToSleep(isDoubleTapSbEnabled);
