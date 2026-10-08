@@ -30,6 +30,15 @@ object OneUiToggles {
     /** The thick brightness pill without a thumb line. */
     const val BRIGHTNESS_PILL = "oneui_brightness_pill"
 
+    /** [BRIGHTNESS_PILL]'s thickness in dp, 48 unless set. Fallback when orientation-specific key is unset. */
+    const val BRIGHTNESS_PILL_SIZE_DP = "oneui_brightness_pill_size_dp"
+
+    /** [BRIGHTNESS_PILL]'s thickness in dp in portrait, 48 unless set. */
+    const val BRIGHTNESS_PILL_SIZE_PORTRAIT_DP = "oneui_brightness_pill_size_portrait_dp"
+
+    /** [BRIGHTNESS_PILL]'s thickness in dp in landscape, 48 unless set. */
+    const val BRIGHTNESS_PILL_SIZE_LANDSCAPE_DP = "oneui_brightness_pill_size_landscape_dp"
+
     /** The glow around the dynamic island. */
     const val ISLAND_GLOW = "systemui_island_glow"
 }
