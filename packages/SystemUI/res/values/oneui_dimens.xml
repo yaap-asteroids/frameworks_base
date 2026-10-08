@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: 2026 The yaap-asteroids Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- One UI style Quick Settings: tiles sit on a rounded card over the blurred shade. -->
+    <dimen name="oneui_qs_card_corner_radius">28dp</dimen>
+    <dimen name="oneui_qs_card_padding">12dp</dimen>
+    <!-- Opacity of the card over the shade, 0-100. -->
+    <integer name="oneui_qs_card_alpha_percent">55</integer>
+
+    <!-- Icon tiles in the expanded panel: a circle with the tile's label centered below. -->
+    <dimen name="oneui_qs_icon_tile_size">64dp</dimen>
+    <dimen name="oneui_qs_icon_tile_label_spacing">6dp</dimen>
+</resources>

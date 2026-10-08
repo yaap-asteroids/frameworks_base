@@ -138,6 +138,8 @@ import com.android.systemui.media.remedia.ui.compose.Media
 import com.android.systemui.media.remedia.ui.compose.MediaPresentationStyle
 import com.android.systemui.media.remedia.ui.compose.MediaUiBehavior
 import com.android.systemui.media.remedia.ui.viewmodel.MediaViewModel
+import com.android.systemui.oneui.OneUiToggles
+import com.android.systemui.oneui.rememberSecureToggle
 import com.android.systemui.plugins.qs.QS
 import com.android.systemui.plugins.qs.QSContainerController
 import com.android.systemui.qs.composefragment.SceneKeys.QuickQuickSettings
@@ -146,6 +148,7 @@ import com.android.systemui.qs.composefragment.SceneKeys.debugName
 import com.android.systemui.qs.composefragment.SceneKeys.toIdleSceneKey
 import com.android.systemui.qs.composefragment.ui.GridAnchor
 import com.android.systemui.qs.composefragment.ui.NotificationScrimClipParams
+import com.android.systemui.qs.composefragment.ui.OneUiCard
 import com.android.systemui.qs.composefragment.ui.quickQuickSettingsToQuickSettings
 import com.android.systemui.qs.composefragment.ui.toEditMode
 import com.android.systemui.qs.composefragment.viewmodel.QSFragmentComposeViewModel
@@ -246,7 +249,7 @@ constructor(
         mSliderAtTop = Settings.Secure.getIntForUser(
             mContentResolver,
             Settings.Secure.QS_BRIGHTNESS_POSITION_BOTTOM,
-            0,
+            1,
             UserHandle.USER_CURRENT
         ) == 0
 
@@ -341,7 +344,7 @@ constructor(
                 mSliderAtTop = Settings.Secure.getIntForUser(
                     mContentResolver,
                     Settings.Secure.QS_BRIGHTNESS_POSITION_BOTTOM,
-                    0,
+                    1,
                     UserHandle.USER_CURRENT
                 ) == 0
             }
@@ -878,6 +881,7 @@ constructor(
     private fun ContentScope.QuickSettingsElement(modifier: Modifier = Modifier) {
         val qqsPadding = viewModel.qqsHeaderHeight
         val qsExtraPadding = dimensionResource(R.dimen.qs_panel_padding_top)
+        val buttonsOnTop by rememberSecureToggle(OneUiToggles.QS_BUTTONS_ON_TOP)
         Column(
             modifier =
                 modifier.collapseExpandSemanticAction(
@@ -927,6 +931,18 @@ constructor(
                         Spacer(
                             modifier = Modifier.height { qqsPadding + qsExtraPadding.roundToPx() }
                         )
+                        // One UI keeps the edit, settings and power buttons at the top of the
+                        // panel, above the tiles.
+                        if (buttonsOnTop) {
+                            QuickSettingsTheme {
+                                Element(
+                                    Elements.FooterActions,
+                                    Modifier.sysuiResTag(ResIdTags.qsFooterActions),
+                                ) {
+                                    FooterActions(viewModel = viewModel.footerActionsViewModel)
+                                }
+                            }
+                        }
                         val BrightnessSlider: @Composable () -> Unit = {
                             Element(Elements.BrightnessSlider, modifier = modifier) {
                                 BrightnessSlider(viewModel, layoutState)
@@ -949,14 +965,16 @@ constructor(
                                 .let { state -> { state.value } }
                         val TileGrid =
                             @Composable {
-                                Box {
-                                    GridAnchor()
+                                OneUiCard {
+                                    Box {
+                                        GridAnchor()
 
-                                    TileGrid(
-                                        viewModel = containerViewModel.tileGridViewModel,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        listening = isListening,
-                                    )
+                                        TileGrid(
+                                            viewModel = containerViewModel.tileGridViewModel,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            listening = isListening,
+                                        )
+                                    }
                                 }
                             }
                         val Media =
@@ -1000,12 +1018,14 @@ constructor(
                         }
                     }
                 }
-                QuickSettingsTheme {
-                    Element(
-                        Elements.FooterActions,
-                        Modifier.sysuiResTag(ResIdTags.qsFooterActions),
-                    ) {
-                        FooterActions(viewModel = viewModel.footerActionsViewModel)
+                if (!buttonsOnTop) {
+                    QuickSettingsTheme {
+                        Element(
+                            Elements.FooterActions,
+                            Modifier.sysuiResTag(ResIdTags.qsFooterActions),
+                        ) {
+                            FooterActions(viewModel = viewModel.footerActionsViewModel)
+                        }
                     }
                 }
             }

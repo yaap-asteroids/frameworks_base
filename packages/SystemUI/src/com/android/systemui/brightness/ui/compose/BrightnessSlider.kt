@@ -117,9 +117,6 @@ import com.android.systemui.biometrics.Utils.toBitmap
 import com.android.systemui.brightness.domain.model.GammaBrightness
 import com.android.systemui.brightness.ui.compose.AnimationSpecs.IconAppearSpec
 import com.android.systemui.brightness.ui.compose.AnimationSpecs.IconDisappearSpec
-import com.android.systemui.brightness.ui.compose.InternalDimensions.IconPadding
-import com.android.systemui.brightness.ui.compose.InternalDimensions.SliderTrackRoundedCorner
-import com.android.systemui.brightness.ui.compose.InternalDimensions.ThumbTrackGapSize
 import com.android.systemui.brightness.ui.viewmodel.BrightnessSliderViewModel
 import com.android.systemui.brightness.ui.viewmodel.Drag
 import com.android.systemui.common.shared.colors.SystemUISliderColors
@@ -129,6 +126,8 @@ import com.android.systemui.haptics.slider.SeekableSliderTrackerConfig
 import com.android.systemui.haptics.slider.SliderHapticFeedbackConfig
 import com.android.systemui.haptics.slider.compose.ui.SliderHapticsViewModel
 import com.android.systemui.lifecycle.rememberViewModel
+import com.android.systemui.oneui.OneUiToggles
+import com.android.systemui.oneui.rememberSecureToggle
 import com.android.systemui.qs.ui.compose.borderOnFocus
 import com.android.systemui.res.R
 import com.android.systemui.util.policy.PolicyRestriction
@@ -154,7 +153,7 @@ fun BrightnessSlider(
     enabled: Boolean = true,
     showToast: () -> Unit = {},
     hapticsViewModelFactory: SliderHapticsViewModel.Factory,
-    dimensions: BrightnessSliderDimensions = BrightnessSliderDimensions.Default,
+    dimensions: BrightnessSliderDimensions = BrightnessSliderDimensions.current(),
 ) {
     val context = LocalContext.current
     val cr = context.contentResolver
@@ -232,12 +231,13 @@ fun BrightnessSlider(
     val activeIconColor = colors.activeTickColor
     val iconSize = dimensions.iconSize
     val inactiveIconColor = colors.inactiveTickColor
+    val trackShape = TrackShape.current()
     // Offset from the right
-    val trackIcon: DrawScope.(Offset, Color, Float) -> Unit = remember {
+    val trackIcon: DrawScope.(Offset, Color, Float) -> Unit = remember(trackShape) {
         { offset, color, alpha ->
             val rtl = layoutDirection == LayoutDirection.Rtl
             scale(if (rtl) -1f else 1f, 1f) {
-                translate(offset.x - IconPadding.toPx() - iconSize.toSize().width, offset.y) {
+                translate(offset.x - trackShape.iconPadding.toPx() - iconSize.toSize().width, offset.y) {
                     with(painter) {
                         draw(
                             iconSize.toSize(),
@@ -391,8 +391,8 @@ fun BrightnessSlider(
                                 val activeTrackStart = 0f
                                 val activeTrackEnd =
                                     size.width * sliderState.coercedValueAsFraction -
-                                        ThumbTrackGapSize.toPx()
-                                val inactiveTrackStart = activeTrackEnd + ThumbTrackGapSize.toPx() * 2
+                                        trackShape.thumbGap.toPx()
+                                val inactiveTrackStart = activeTrackEnd + trackShape.thumbGap.toPx() * 2
                                 val inactiveTrackEnd = size.width
 
                                 val activeTrackWidth = activeTrackEnd - activeTrackStart
@@ -400,7 +400,7 @@ fun BrightnessSlider(
 
                                 if (
                                     iconSize.toSize().width <
-                                        inactiveTrackWidth - IconPadding.toPx() * 2
+                                        inactiveTrackWidth - trackShape.iconPadding.toPx() * 2
                                 ) {
                                     showIconActive = false
                                     trackIcon(
@@ -409,7 +409,7 @@ fun BrightnessSlider(
                                         iconInactiveAlphaAnimatable.value,
                                     )
                                 } else if (
-                                    iconSize.toSize().width < activeTrackWidth - IconPadding.toPx() * 2
+                                    iconSize.toSize().width < activeTrackWidth - trackShape.iconPadding.toPx() * 2
                                 ) {
                                     showIconActive = true
                                     trackIcon(
@@ -419,10 +419,12 @@ fun BrightnessSlider(
                                     )
                                 }
                             },
-                    trackCornerSize = SliderTrackRoundedCorner,
-                    trackInsideCornerSize = 2.dp,
+                    trackCornerSize = trackShape.corner,
+                    // Round the end of the fill too, so it reads as one pill at any level
+                    // instead of ending in a square edge that squashes near the bottom.
+                    trackInsideCornerSize = trackShape.insideCorner,
                     drawStopIndicator = null,
-                    thumbTrackGapSize = ThumbTrackGapSize,
+                    thumbTrackGapSize = trackShape.thumbGap,
                     colors = colors,
                 )
             },
@@ -467,7 +469,7 @@ fun BrightnessSlider(
                 },
                 modifier = Modifier
                     .size(45.dp)
-                    .clip(RoundedCornerShape(CornerSize(SliderTrackRoundedCorner)))
+                    .clip(RoundedCornerShape(CornerSize(trackShape.corner)))
                     .background(autoBrightnessBackgroundColor),
                 update = { button ->
                     val targetState =
@@ -541,7 +543,7 @@ fun BrightnessSliderContainer(
     viewModel: BrightnessSliderViewModel,
     modifier: Modifier = Modifier,
     containerColors: ContainerColors,
-    dimensions: BrightnessSliderDimensions = BrightnessSliderDimensions.Default,
+    dimensions: BrightnessSliderDimensions = BrightnessSliderDimensions.current(),
 ) {
     val gamma = viewModel.currentBrightness.value
     if (gamma == BrightnessSliderViewModel.initialValue.value) { // Ignore initial negative value.
@@ -555,6 +557,7 @@ fun BrightnessSliderContainer(
             initialValue = PolicyRestriction.NoRestriction
         )
     val overriddenByAppState by viewModel.brightnessOverriddenByWindow.collectAsStateWithLifecycle()
+    val trackShape = TrackShape.current()
     var dragging by remember { mutableStateOf(false) }
     var enabled by remember { mutableStateOf(false) }
 
@@ -610,7 +613,7 @@ fun BrightnessSliderContainer(
             modifier =
                 Modifier.borderOnFocus(
                         color = MaterialTheme.colorScheme.secondary,
-                        cornerSize = CornerSize(SliderTrackRoundedCorner),
+                        cornerSize = CornerSize(trackShape.corner),
                     )
                     .then(if (viewModel.showMirror) Modifier.drawInOverlay() else Modifier)
                     .sliderBackground(
@@ -661,6 +664,7 @@ data class BrightnessSliderDimensions(
     val backgroundFrameHeight: Dp,
 ) {
     companion object {
+        /** AOSP's slider. */
         val Default =
             BrightnessSliderDimensions(
                 iconSize = DpSize(28.dp, 28.dp),
@@ -672,13 +676,32 @@ data class BrightnessSliderDimensions(
                 backgroundFrameWidth = 10.dp,
                 backgroundFrameHeight = 6.dp,
             )
+
+        /** One UI's thick pill, without a thumb line. */
+        val OneUi = Default.copy(thumbHeight = 48.dp, thumbWidth = 0.dp, trackHeight = 48.dp)
+
+        /** [OneUi] or [Default], following [OneUiToggles.BRIGHTNESS_PILL]. */
+        @Composable
+        fun current(): BrightnessSliderDimensions =
+            if (rememberSecureToggle(OneUiToggles.BRIGHTNESS_PILL).value) OneUi else Default
     }
 }
 
-private object InternalDimensions {
-    val SliderTrackRoundedCorner = 12.dp
-    val IconPadding = 6.dp
-    val ThumbTrackGapSize = 6.dp
+/** The track's corners and spacing: AOSP's, or One UI's round-ended pill. */
+private data class TrackShape(
+    val corner: Dp,
+    val insideCorner: Dp,
+    val iconPadding: Dp,
+    val thumbGap: Dp,
+) {
+    companion object {
+        val Stock = TrackShape(corner = 12.dp, insideCorner = 2.dp, iconPadding = 6.dp, thumbGap = 6.dp)
+        val Pill = TrackShape(corner = 24.dp, insideCorner = 24.dp, iconPadding = 12.dp, thumbGap = 0.dp)
+
+        @Composable
+        fun current(): TrackShape =
+            if (rememberSecureToggle(OneUiToggles.BRIGHTNESS_PILL).value) Pill else Stock
+    }
 }
 
 private object AnimationSpecs {
