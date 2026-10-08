@@ -23,6 +23,7 @@ import com.android.systemui.media.controls.shared.model.MediaData
 import com.android.systemui.media.remedia.data.model.MediaDataModel
 import com.android.systemui.media.remedia.data.repository.MediaRepositoryImpl
 import com.android.systemui.media.remedia.shared.flag.MediaControlsInComposeFlag
+import com.android.systemui.media.remedia.shared.model.MediaSessionState
 import com.android.systemui.res.R
 import com.android.systemui.statusbar.quickactions.media.shared.model.MediaControlChipModel
 import javax.inject.Inject
@@ -102,6 +103,8 @@ private fun MediaDataModel.toMediaControlChipModel(): MediaControlChipModel {
         appName = this.appName,
         songName = this.title,
         playOrPause = this.playbackStateActions?.getActionById(R.id.actionPlayPause),
+        clickIntent = this.clickIntent,
+        isPlaying = this.state == MediaSessionState.Playing,
     )
 }
 
@@ -111,5 +114,7 @@ private fun MediaData.toMediaControlChipModel(): MediaControlChipModel {
         appName = this.app,
         songName = this.song,
         playOrPause = this.semanticActions?.getActionById(R.id.actionPlayPause),
+        clickIntent = this.clickIntent,
+        isPlaying = this.isPlaying == true,
     )
 }

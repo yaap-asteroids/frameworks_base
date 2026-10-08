@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -98,6 +99,11 @@ import com.android.systemui.statusbar.core.NewStatusBarIcons
 import com.android.systemui.statusbar.core.StatusBarEventForwardingModernization
 import com.android.systemui.statusbar.core.StatusBarForDesktop
 import com.android.systemui.statusbar.events.domain.interactor.SystemStatusEventAnimationInteractor
+import com.android.systemui.statusbar.island.DynamicIsland
+import com.android.systemui.statusbar.island.DynamicIslandDependencies
+import com.android.systemui.statusbar.island.IslandState
+import com.android.systemui.statusbar.island.rememberDynamicIslandEnabled
+import com.android.systemui.statusbar.island.rememberIslandCutout
 import com.android.systemui.statusbar.layout.ui.viewmodel.AppHandlesViewModel
 import com.android.systemui.statusbar.notification.icon.ui.viewbinder.ConnectedDisplaysStatusBarNotificationIconViewStore
 import com.android.systemui.statusbar.notification.icon.ui.viewbinder.NotificationIconContainerStatusBarViewBinder
@@ -152,6 +158,7 @@ constructor(
     @DisplayAware private val headlineViewModelFactory: HeadlineViewModel.Factory,
     private val statusBarRegionSamplingViewModelFactory: StatusBarRegionSamplingViewModel.Factory,
     private val shadeWindowRootView: WindowRootView,
+    private val dynamicIslandDependencies: DynamicIslandDependencies,
 ) {
     fun create(root: ViewGroup, andThen: (ViewGroup) -> Unit): ComposeView {
         val composeView = ComposeView(root.context)
@@ -175,6 +182,7 @@ constructor(
                         eventAnimationInteractor = eventAnimationInteractor,
                         statusBarRegionSamplingViewModelFactory =
                             statusBarRegionSamplingViewModelFactory,
+                        dynamicIslandDependencies = dynamicIslandDependencies,
                         onViewCreated = andThen,
                         modifier = Modifier.sysUiResTagContainer(),
                     )
@@ -213,6 +221,7 @@ fun StatusBarRoot(
     darkIconDispatcher: DarkIconDispatcher,
     eventAnimationInteractor: SystemStatusEventAnimationInteractor,
     statusBarRegionSamplingViewModelFactory: StatusBarRegionSamplingViewModel.Factory,
+    dynamicIslandDependencies: DynamicIslandDependencies,
     onViewCreated: (ViewGroup) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -271,6 +280,14 @@ fun StatusBarRoot(
                     statusBarViewModel = statusBarViewModel,
                     iconViewStore = iconViewStore,
                     appHandlesViewModel = appHandlesViewModel,
+                    context = context,
+                )
+
+                addDynamicIslandComposable(
+                    phoneStatusBarView = phoneStatusBarView,
+                    statusBarViewModel = statusBarViewModel,
+                    dependencies = dynamicIslandDependencies,
+                    iconViewStore = iconViewStore,
                     context = context,
                 )
 
@@ -513,6 +530,20 @@ private fun addStartSideComposable(
                     }
 
                 val chipsVisibilityModel = statusBarViewModel.ongoingActivityChips
+                // The chips the dynamic island shows are left out here, so each shows once.
+                val islandEnabled by rememberDynamicIslandEnabled()
+                val islandKeys =
+                    IslandState.of(
+                            active = chipsVisibilityModel.chips.active,
+                            media = null,
+                            enabled = islandEnabled,
+                        )
+                        ?.activityKeys
+                        .orEmpty()
+                val startChips =
+                    chipsVisibilityModel.chips.let { chips ->
+                        chips.copy(active = chips.active.filterNot { it.key in islandKeys })
+                    }
                 // Popup chips share the ongoing chips' width limit so neither reaches the clock.
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -520,7 +551,7 @@ private fun addStartSideComposable(
                 ) {
                     if (chipsVisibilityModel.areChipsAllowed) {
                         OngoingActivityChips(
-                            chips = chipsVisibilityModel.chips,
+                            chips = startChips,
                             iconViewStore = iconViewStore,
                             onChipBoundsChanged = statusBarViewModel::onChipBoundsChanged,
                             // TODO(b/393581408): Now that we always enforce a max width on the
@@ -534,7 +565,7 @@ private fun addStartSideComposable(
                     // AOSP only draws the popup chips (e.g. media controls that expand from
                     // the status bar) on the desktop status bar; show them on phones too. Their
                     // popups are scene container overlays, so without it they would do nothing
-                    // on tap.
+                    // on tap; the dynamic island shows media there instead.
                     if (StatusBarPopupChips.isEnabled && SceneContainerFlag.isEnabled) {
                         QuickActionChipsContainer(
                             chips = statusBarViewModel.popupChips,
@@ -602,6 +633,44 @@ fun chipsMaxWidth(
             .coerceAtLeast(0)
 
     return (widthInPx / density).dp
+}
+
+/** Adds the [DynamicIsland] over the whole status bar, centred on the camera cutout. */
+private fun addDynamicIslandComposable(
+    phoneStatusBarView: PhoneStatusBarView,
+    statusBarViewModel: HomeStatusBarViewModel,
+    dependencies: DynamicIslandDependencies,
+    iconViewStore: NotificationIconContainerViewBinder.IconViewStore?,
+    context: Context,
+) {
+    val cutoutSpace = phoneStatusBarView.requireViewById<View>(R.id.cutout_space_view)
+    val composeView =
+        ComposeView(context).apply {
+            layoutParams =
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                )
+            setContent {
+                val enabled by rememberDynamicIslandEnabled()
+                val cutout by rememberIslandCutout(cutoutSpace)
+                val media by
+                    dependencies.mediaControlChipInteractor.mediaControlChipModel.collectAsState()
+                val chips = statusBarViewModel.ongoingActivityChips
+                DynamicIsland(
+                    state =
+                        if (chips.areChipsAllowed) {
+                            IslandState.of(chips.chips.active, media, enabled)
+                        } else {
+                            null
+                        },
+                    dependencies = dependencies,
+                    iconViewStore = iconViewStore,
+                    cutout = cutout,
+                )
+            }
+        }
+    phoneStatusBarView.addView(composeView)
 }
 
 /** Create a new [UnifiedBattery] and add it to the end of the system_icons container */

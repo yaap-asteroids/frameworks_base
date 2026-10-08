@@ -16,6 +16,7 @@
 
 package com.android.systemui.statusbar.quickactions.media.shared.model
 
+import android.app.PendingIntent
 import com.android.systemui.common.shared.model.Icon
 import com.android.systemui.media.controls.shared.model.MediaAction
 
@@ -25,12 +26,18 @@ sealed interface MediaControlChipModel {
     val appName: String?
     val songName: CharSequence?
     val playOrPause: MediaAction?
+    /** Opens the app playing the media. */
+    val clickIntent: PendingIntent?
+    /** Whether it is playing rather than paused or buffering. */
+    val isPlaying: Boolean
 
     data class Legacy(
         val appIcon: android.graphics.drawable.Icon?,
         override val appName: String?,
         override val songName: CharSequence?,
         override val playOrPause: MediaAction?,
+        override val clickIntent: PendingIntent? = null,
+        override val isPlaying: Boolean = false,
     ) : MediaControlChipModel
 
     data class Compose(
@@ -38,5 +45,7 @@ sealed interface MediaControlChipModel {
         override val appName: String?,
         override val songName: CharSequence?,
         override val playOrPause: MediaAction?,
+        override val clickIntent: PendingIntent? = null,
+        override val isPlaying: Boolean = false,
     ) : MediaControlChipModel
 }

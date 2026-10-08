@@ -29,6 +29,9 @@ object OneUiToggles {
 
     /** The thick brightness pill without a thumb line. */
     const val BRIGHTNESS_PILL = "oneui_brightness_pill"
+
+    /** The glow around the dynamic island. */
+    const val ISLAND_GLOW = "systemui_island_glow"
 }
 
 /** Follows the Settings.Secure switch [name], which is on unless set to 0. */

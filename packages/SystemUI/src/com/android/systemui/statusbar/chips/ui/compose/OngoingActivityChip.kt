@@ -40,6 +40,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -68,6 +70,8 @@ fun OngoingActivityChip(
     model: OngoingActivityChipModel.Active,
     iconViewStore: NotificationIconContainerViewBinder.IconViewStore?,
     modifier: Modifier = Modifier,
+    cutoutGap: Dp = 0.dp,
+    onCutoutGapPositioned: ((centerXInWindow: Float) -> Unit)? = null,
 ) {
     val contentDescription =
         when (val icon = model.icon) {
@@ -164,7 +168,7 @@ fun OngoingActivityChip(
         defaultMinSize = false,
         transitionControllerFactory = model.transitionManager?.controllerFactory,
     ) {
-        ChipBody(model, iconViewStore, minWidth = minWidth)
+        ChipBody(model, iconViewStore, minWidth, cutoutGap, onCutoutGapPositioned)
     }
 }
 
@@ -173,6 +177,8 @@ private fun ChipBody(
     model: OngoingActivityChipModel.Active,
     iconViewStore: NotificationIconContainerViewBinder.IconViewStore?,
     minWidth: Dp,
+    cutoutGap: Dp,
+    onCutoutGapPositioned: ((centerXInWindow: Float) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -199,6 +205,15 @@ private fun ChipBody(
     ) {
         model.icon?.let {
             ChipIcon(viewModel = it, iconViewStore = iconViewStore, colors = model.colors)
+        }
+
+        // Room for a camera cutout between the icon and the text, for the dynamic island.
+        if (cutoutGap > 0.dp) {
+            Spacer(
+                Modifier.width(cutoutGap).onGloballyPositioned {
+                    onCutoutGapPositioned?.invoke(it.positionInWindow().x + it.size.width / 2f)
+                }
+            )
         }
 
         val isIconOnly = model.content is OngoingActivityChipModel.Content.IconOnly

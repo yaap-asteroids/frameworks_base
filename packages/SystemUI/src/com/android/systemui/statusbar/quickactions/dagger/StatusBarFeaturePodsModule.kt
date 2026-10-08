@@ -22,6 +22,8 @@ import com.android.systemui.statusbar.quickactions.assistant.data.repository.Ass
 import com.android.systemui.statusbar.quickactions.assistant.data.repository.AssistantRepositoryImpl
 import com.android.systemui.statusbar.quickactions.assistant.domain.interactor.AssistantIconInteractor
 import com.android.systemui.statusbar.quickactions.assistant.domain.interactor.AssistantIconInteractorImpl
+import com.android.systemui.statusbar.island.IslandNotificationFilter
+import com.android.systemui.statusbar.quickactions.media.MediaControlChipStartable
 import com.android.systemui.statusbar.quickactions.sharescreen.domain.interactor.ShareScreenPrivacyIndicatorInteractor
 import dagger.Binds
 import dagger.Module
@@ -45,4 +47,16 @@ interface StatusBarFeaturePodsModule {
     fun bindShareScreenPrivacyIndicatorInteractor(
         impl: ShareScreenPrivacyIndicatorInteractor
     ): CoreStartable
+
+    /** Publishes the playing media for the status bar's media chip and the dynamic island. */
+    @Binds
+    @IntoMap
+    @ClassKey(MediaControlChipStartable::class)
+    fun bindMediaControlChipStartable(impl: MediaControlChipStartable): CoreStartable
+
+    /** Pops incoming notifications out of the dynamic island instead of heads up. */
+    @Binds
+    @IntoMap
+    @ClassKey(IslandNotificationFilter::class)
+    fun bindIslandNotificationFilter(impl: IslandNotificationFilter): CoreStartable
 }
