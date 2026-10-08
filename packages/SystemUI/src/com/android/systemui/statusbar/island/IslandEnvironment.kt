@@ -26,6 +26,12 @@ const val DYNAMIC_ISLAND_SETTING = "systemui_dynamic_island"
 const val ISLAND_OFFSET_X_DP = "systemui_island_offset_x_dp"
 const val ISLAND_OFFSET_Y_DP = "systemui_island_offset_y_dp"
 
+/** Settings.Secure key for how large the media card pops out of the island, 40 (%) unless set. */
+const val ISLAND_MEDIA_CARD_SCALE_PERCENT = "systemui_island_media_card_scale_percent"
+
+/** Settings.Secure key for the island's own appear/disappear starting scale, 60 (%) unless set. */
+const val ISLAND_APPEAR_SCALE_PERCENT = "systemui_island_appear_scale_percent"
+
 /** Where the camera cutout sits in the status bar window. */
 data class IslandCutout(val centerX: Float, val width: Float) {
     companion object {

@@ -138,6 +138,7 @@ fun DynamicIsland(
     val nudgeYDp by rememberSecureInt(ISLAND_OFFSET_Y_DP, default = 0)
     val nudgeXPx = with(density) { nudgeXDp.dp.toPx() }
     val nudgeYPx = with(density) { nudgeYDp.dp.toPx() }
+    val appearScale = rememberSecureInt(ISLAND_APPEAR_SCALE_PERCENT, default = 60).value / 100f
 
     val cutoutPivot =
         if (aligned && rowWidth > 0f) {
@@ -161,10 +162,10 @@ fun DynamicIsland(
             visible = state != null || pop != null,
             enter =
                 fadeIn(IslandMotion.smooth()) +
-                    scaleIn(IslandMotion.snappy(), AppearScale, cutoutPivot),
+                    scaleIn(IslandMotion.snappy(), appearScale, cutoutPivot),
             exit =
                 fadeOut(IslandMotion.smooth()) +
-                    scaleOut(IslandMotion.snappy(), AppearScale, cutoutPivot),
+                    scaleOut(IslandMotion.snappy(), appearScale, cutoutPivot),
         ) {
             val targetIsland = shown
             val targetPop = shownPop.takeIf { pop != null || state == null }
@@ -472,6 +473,7 @@ private fun MediaCard(
 
     val statusBarHeight = dimensionResource(R.dimen.status_bar_height)
     val offsetY = with(LocalDensity.current) { statusBarHeight.roundToPx() }
+    val cardScale = rememberSecureInt(ISLAND_MEDIA_CARD_SCALE_PERCENT, default = 40).value / 100f
     Popup(
         alignment = Alignment.TopCenter,
         offset = IntOffset(0, offsetY),
@@ -483,10 +485,10 @@ private fun MediaCard(
             visibleState = visible,
             enter =
                 fadeIn(IslandMotion.smooth()) +
-                    scaleIn(IslandMotion.snappy(), CardScale, TopCenterOrigin),
+                    scaleIn(IslandMotion.snappy(), cardScale, TopCenterOrigin),
             exit =
                 fadeOut(IslandMotion.smooth()) +
-                    scaleOut(IslandMotion.snappy(), CardScale, TopCenterOrigin),
+                    scaleOut(IslandMotion.snappy(), cardScale, TopCenterOrigin),
         ) {
             MediaControlPopup(viewModel, Modifier.padding(horizontal = 8.dp))
         }
@@ -514,8 +516,6 @@ private fun islandColors(colors: ColorsModel): ColorsModel =
 
 /** Space either side of the camera: just enough that content never touches it. */
 private val CutoutClearance = 2.dp
-private const val AppearScale = 0.6f
-private const val CardScale = 0.4f
 private const val LevelLow = 0.3f
 private val StillLevel: State<Float> = mutableFloatStateOf(LevelLow)
 private val LevelBarPeriodsMs = listOf(420, 560, 470)

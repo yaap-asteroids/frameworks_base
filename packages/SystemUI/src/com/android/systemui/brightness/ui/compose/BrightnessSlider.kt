@@ -17,6 +17,7 @@
 package com.android.systemui.brightness.ui.compose
 
 import android.content.Context
+import android.content.res.Configuration
 import android.database.ContentObserver
 import android.graphics.PorterDuff
 import android.graphics.drawable.AnimatedStateListDrawable
@@ -92,6 +93,7 @@ import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
@@ -127,6 +129,7 @@ import com.android.systemui.haptics.slider.SliderHapticFeedbackConfig
 import com.android.systemui.haptics.slider.compose.ui.SliderHapticsViewModel
 import com.android.systemui.lifecycle.rememberViewModel
 import com.android.systemui.oneui.OneUiToggles
+import com.android.systemui.oneui.rememberSecureInt
 import com.android.systemui.oneui.rememberSecureToggle
 import com.android.systemui.qs.ui.compose.borderOnFocus
 import com.android.systemui.res.R
@@ -677,13 +680,23 @@ data class BrightnessSliderDimensions(
                 backgroundFrameHeight = 6.dp,
             )
 
-        /** One UI's thick pill, without a thumb line. */
-        val OneUi = Default.copy(thumbHeight = 48.dp, thumbWidth = 0.dp, trackHeight = 48.dp)
+        /** [Default] sized to [size], without a thumb line. */
+        private fun oneUi(size: Dp) = Default.copy(thumbHeight = size, thumbWidth = 0.dp, trackHeight = size)
 
-        /** [OneUi] or [Default], following [OneUiToggles.BRIGHTNESS_PILL]. */
+        /**
+         * [oneUi] at [OneUiToggles.BRIGHTNESS_PILL_SIZE_PORTRAIT_DP] or
+         * [OneUiToggles.BRIGHTNESS_PILL_SIZE_LANDSCAPE_DP] depending on orientation, falling back
+         * to [OneUiToggles.BRIGHTNESS_PILL_SIZE_DP] or [Default].
+         */
         @Composable
-        fun current(): BrightnessSliderDimensions =
-            if (rememberSecureToggle(OneUiToggles.BRIGHTNESS_PILL).value) OneUi else Default
+        fun current(): BrightnessSliderDimensions {
+            if (!rememberSecureToggle(OneUiToggles.BRIGHTNESS_PILL).value) return Default
+            val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+            val fallbackDp by rememberSecureInt(OneUiToggles.BRIGHTNESS_PILL_SIZE_DP, default = 48)
+            val key = if (isLandscape) OneUiToggles.BRIGHTNESS_PILL_SIZE_LANDSCAPE_DP else OneUiToggles.BRIGHTNESS_PILL_SIZE_PORTRAIT_DP
+            val sizeDp by rememberSecureInt(key, default = fallbackDp)
+            return oneUi(sizeDp.dp)
+        }
     }
 }
 
@@ -696,11 +709,23 @@ private data class TrackShape(
 ) {
     companion object {
         val Stock = TrackShape(corner = 12.dp, insideCorner = 2.dp, iconPadding = 6.dp, thumbGap = 6.dp)
-        val Pill = TrackShape(corner = 24.dp, insideCorner = 24.dp, iconPadding = 12.dp, thumbGap = 0.dp)
+
+        /**
+         * A capsule as tall as [BrightnessSliderDimensions.current]'s pill, so the two can never
+         * drift out of sync: a pill's corner radius is always half its own thickness.
+         */
+        private fun pill(size: Dp) =
+            TrackShape(corner = size / 2, insideCorner = size / 2, iconPadding = 12.dp, thumbGap = 0.dp)
 
         @Composable
-        fun current(): TrackShape =
-            if (rememberSecureToggle(OneUiToggles.BRIGHTNESS_PILL).value) Pill else Stock
+        fun current(): TrackShape {
+            if (!rememberSecureToggle(OneUiToggles.BRIGHTNESS_PILL).value) return Stock
+            val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+            val fallbackDp by rememberSecureInt(OneUiToggles.BRIGHTNESS_PILL_SIZE_DP, default = 48)
+            val key = if (isLandscape) OneUiToggles.BRIGHTNESS_PILL_SIZE_LANDSCAPE_DP else OneUiToggles.BRIGHTNESS_PILL_SIZE_PORTRAIT_DP
+            val sizeDp by rememberSecureInt(key, default = fallbackDp)
+            return pill(sizeDp.dp)
+        }
     }
 }
 
