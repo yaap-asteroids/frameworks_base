@@ -162,7 +162,6 @@ import com.android.systemui.scrim.ScrimView;
 import com.android.systemui.settings.UserTracker;
 import com.android.systemui.shade.CameraLauncher;
 import com.android.systemui.shade.GlanceableHubContainerController;
-import com.android.systemui.shade.NotificationPanelViewController;
 import com.android.systemui.shade.NotificationShadeWindowView;
 import com.android.systemui.shade.NotificationShadeWindowViewController;
 import com.android.systemui.shade.QuickSettingsController;
@@ -405,7 +404,6 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
 
     /** Controller for the Shade. */
     private final ShadeSurface mShadeSurface;
-    NotificationPanelViewController mNotificationPanelViewController;
     private final ShadeLogger mShadeLogger;
 
     // settings
