@@ -5680,7 +5680,7 @@
     <bool name="config_battery_percentage_setting_available">true</bool>
 
     <!-- Default value set for battery percentage in status bar false = disabled, true = enabled -->
-    <bool name="config_defaultBatteryPercentageSetting">false</bool>
+    <bool name="config_defaultBatteryPercentageSetting">true</bool>
 
     <!-- Model of potentially misprovisioned devices. If none is specified in an overlay, an
          empty string is passed in. -->
