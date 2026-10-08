@@ -17,6 +17,7 @@
 package com.android.internal.util.yaap;
 
 import android.app.Application;
+import android.app.compat.gms.GmsCompat;
 import android.content.Context;
 import android.content.res.Resources;
 import android.os.Build;
@@ -135,6 +136,12 @@ public final class PixelPropsUtils {
 
     public void setProps(String packageName) {
         if (packageName == null || !sIsEnabled) {
+            return;
+        }
+        if (GmsCompat.isEnabled()) {
+            // Sandboxed Google Play runs Play services and the Play Store as ordinary
+            // sandboxed apps that see the real device, so leave their Build fields alone
+            // instead of having the two rewrite the same process.
             return;
         }
         final String fp = (String) certifiedProps.get("FINGERPRINT");
