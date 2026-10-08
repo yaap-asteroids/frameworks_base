@@ -23,6 +23,7 @@ import com.android.systemui.volume.dialog.domain.interactor.ExpandedAudioTileDet
 import com.android.systemui.volume.dialog.shared.VolumeDialogLogger
 import com.android.systemui.volume.dialog.sliders.dagger.VolumeDialogSliderComponent
 import com.android.systemui.volume.dialog.sliders.domain.interactor.VolumeDialogSlidersInteractor
+import com.android.systemui.window.data.repository.SurfaceStyleRepository
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -40,13 +41,16 @@ constructor(
     private val sliderComponentFactory: VolumeDialogSliderComponent.Factory,
     private val volumeDialogLogger: VolumeDialogLogger,
     private val expandedAudioTileDetailsFeatureInteractor: ExpandedAudioTileDetailsFeatureInteractor,
+    surfaceStyleRepository: SurfaceStyleRepository,
 ) {
 
     // Use horizontal volume dialog if the audio tile details view is enabled
     val isVolumeDialogVertical = !expandedAudioTileDetailsFeatureInteractor.isEnabled()
 
     // Show blur if the flag is enabled and the volume dialog is vertical
-    val showBlur = isVolumeAndPowerBlurEnabled() && isVolumeDialogVertical
+    val showBlur =
+        isVolumeAndPowerBlurEnabled() && isVolumeDialogVertical &&
+            surfaceStyleRepository.blursBehind
 
     val sliders: Flow<VolumeDialogSliderUiModel> =
         slidersInteractor.sliders

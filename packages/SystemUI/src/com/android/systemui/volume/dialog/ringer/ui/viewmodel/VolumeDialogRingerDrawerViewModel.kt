@@ -47,6 +47,7 @@ import com.android.systemui.volume.dialog.ringer.domain.VolumeDialogRingerIntera
 import com.android.systemui.volume.dialog.ringer.shared.model.VolumeDialogRingerModel
 import com.android.systemui.volume.dialog.shared.VolumeDialogLogger
 import com.android.systemui.volume.dialog.ui.VolumeDialogUiEvent
+import com.android.systemui.window.data.repository.SurfaceStyleRepository
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -80,13 +81,16 @@ constructor(
     private val uiEventLogger: UiEventLogger,
     private val systemClock: SystemClock,
     private val expandedAudioTileDetailsFeatureInteractor: ExpandedAudioTileDetailsFeatureInteractor,
+    surfaceStyleRepository: SurfaceStyleRepository,
 ) {
 
     // Use horizontal volume dialog if the audio tile details view is enabled
     val isVolumeDialogVertical = !expandedAudioTileDetailsFeatureInteractor.isEnabled()
 
     // Show blur if the flag is enabled and the volume dialog is vertical
-    val showBlur = isVolumeAndPowerBlurEnabled() && isVolumeDialogVertical
+    val showBlur =
+        isVolumeAndPowerBlurEnabled() && isVolumeDialogVertical &&
+            surfaceStyleRepository.blursBehind
 
     private val drawerState = MutableStateFlow<RingerDrawerState>(RingerDrawerState.Initial)
     private val orientation: StateFlow<Int> =

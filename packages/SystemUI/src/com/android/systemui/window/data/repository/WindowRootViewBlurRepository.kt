@@ -33,6 +33,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 typealias BlurAppliedListener = Consumer<Int>
@@ -70,6 +71,7 @@ constructor(
     crossWindowBlurListeners: CrossWindowBlurListeners,
     @Main private val executor: Executor,
     @Application private val scope: CoroutineScope,
+    surfaceStyleRepository: SurfaceStyleRepository,
 ) : WindowRootViewBlurRepository {
 
     override val trackingShadeMotion = MutableStateFlow(false)
@@ -92,7 +94,12 @@ constructor(
                 sendUpdate.accept(crossWindowBlurListeners.isCrossWindowBlurEnabled)
 
                 awaitClose { crossWindowBlurListeners.removeListener(sendUpdate) }
-            } // stateIn because this is backed by a binder call.
+            }
+            // The solid style takes AOSP's no-blur path, which makes every surface opaque.
+            .combine(surfaceStyleRepository.style) { supported, style ->
+                supported && style != SurfaceStyleRepository.STYLE_SOLID
+            }
+            // stateIn because this is backed by a binder call.
             .stateIn(scope, SharingStarted.Eagerly, false)
 
     override var blurAppliedListener: BlurAppliedListener? = null

@@ -159,6 +159,7 @@ import com.android.systemui.util.EmergencyDialerConstants;
 import com.android.systemui.util.RingerModeTracker;
 import com.android.systemui.util.settings.GlobalSettings;
 import com.android.systemui.util.settings.SecureSettings;
+import com.android.systemui.window.data.repository.SurfaceStyleRepository;
 import com.android.systemui.window.domain.interactor.WindowRootViewBlurInteractor;
 
 import dagger.Lazy;
@@ -623,7 +624,8 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
         WindowManager.LayoutParams attrs = dialog.getWindow().getAttributes();
         attrs.setTitle("GlobalActionsDialogLite");
         attrs.layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
-        if (isVolumeAndPowerBlurEnabled() && mTranslucentPowerMenu) {
+        if (isVolumeAndPowerBlurEnabled() && mTranslucentPowerMenu
+                && SurfaceStyleRepository.blursBehind(mContext)) {
             attrs.flags |= WindowManager.LayoutParams.FLAG_BLUR_BEHIND;
             attrs.setBlurBehindRadius(mContext.getResources().getDimensionPixelSize(
                     com.android.systemui.res.R.dimen.global_actions_blur_radius));

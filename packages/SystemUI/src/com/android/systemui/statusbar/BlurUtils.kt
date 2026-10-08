@@ -41,6 +41,7 @@ import com.android.systemui.dagger.qualifiers.Main
 import com.android.systemui.dump.DumpManager
 import com.android.systemui.keyguard.ui.transitions.BlurConfig
 import com.android.systemui.res.R
+import com.android.systemui.window.data.repository.SurfaceStyleRepository
 import java.io.PrintWriter
 import javax.inject.Inject
 
@@ -52,6 +53,7 @@ constructor(
     blurConfig: BlurConfig,
     private val crossWindowBlurListeners: CrossWindowBlurListeners,
     dumpManager: DumpManager,
+    private val surfaceStyleRepository: SurfaceStyleRepository,
 ) : Dumpable {
     val minBlurRadius = resources.getDimensionPixelSize(R.dimen.min_window_blur_radius).toFloat()
     val maxBlurRadius =
@@ -141,13 +143,15 @@ constructor(
         if (viewRootImpl == null || !viewRootImpl.surfaceControl.isValid) {
             return
         }
+        // The translucent surface style keeps surfaces see-through but drops the blur.
+        val blurRadius = if (surfaceStyleRepository.blursBehind) radius else 0
         updateTransactionApplier(viewRootImpl)
         val builder =
             SyncRtSurfaceTransactionApplier.SurfaceParams.Builder(viewRootImpl.surfaceControl)
-        if (shouldBlur(radius)) {
-            builder.withBackgroundBlurRadius(radius)
+        if (shouldBlur(blurRadius)) {
+            builder.withBackgroundBlurRadius(blurRadius)
             builder.withBackgroundBlurScale(scale)
-            if (lastAppliedBlur == 0 && radius != 0) {
+            if (lastAppliedBlur == 0 && blurRadius != 0) {
                 Trace.instantForTrack(TRACE_TAG_APP, TRACK_NAME, "notifyRendererForGpuLoadUp")
                 viewRootImpl.notifyRendererForGpuLoadUp("applyBlur")
 
@@ -158,12 +162,12 @@ constructor(
             if (
                 earlyWakeupEnabled &&
                     lastAppliedBlur != 0 &&
-                    radius == 0 &&
+                    blurRadius == 0 &&
                     !persistentEarlyWakeupRequired
             ) {
                 earlyWakeupEndNextFrame(builder, APPLY_BLUR_TRACE_NAME)
             }
-            lastAppliedBlur = radius
+            lastAppliedBlur = blurRadius
         }
         builder.withOpaque(opaque)
         transactionApplier.scheduleApply(builder.build())

@@ -31,6 +31,7 @@ import com.android.systemui.HardwareBgDrawable;
 import com.android.systemui.MultiListLayout;
 import com.android.systemui.res.R;
 import com.android.systemui.util.leak.RotationUtils;
+import com.android.systemui.window.data.repository.SurfaceStyleRepository;
 
 import java.util.Locale;
 
@@ -82,7 +83,8 @@ public abstract class GlobalActionsLayout extends MultiListLayout {
     }
 
     private void updateIsBlurSupported() {
-        if (isVolumeAndPowerBlurEnabled() && mBackgroundsSet && mIsBlurSupported != null) {
+        if (isVolumeAndPowerBlurEnabled() && mBackgroundsSet && mIsBlurSupported != null
+                && SurfaceStyleRepository.blursBehind(getContext())) {
             updateBackground(mContext.getColor(
                     mIsBlurSupported && mTranslucentPowerMenu
                             ? R.color.global_actions_grid_background_blur
